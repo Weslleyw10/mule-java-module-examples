@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:java="http://www.mulesoft.org/schema/mule/java" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd">
+	<flow name="validate-instanceFlow" doc:id="e652a718-3c02-4aeb-9519-49b566a56fd6" >
+		<http:listener doc:name="/validate-instance" doc:id="b5410631-f923-478d-9390-067e84deae82" config-ref="HTTP_Listener_config" path="/validate-instance"/>
+		<java:new constructor="Employee(java.lang.String,java.lang.Integer,java.lang.String)" doc:name="Employee" doc:id="66b7e2a8-79d0-4e7a-8a74-e642fa8149d8" class="com.integradordedados.examples.Employee" target="employee">
+			<java:args ><![CDATA[#[{
+  name: 'Jane Avi',
+  age: 28,
+  company: "Integrador de Dados"
+}]]]></java:args>
+		</java:new>
+		<java:validate-type doc:name="Employee" doc:id="d3a2cdd4-3281-4e2d-ac51-f83e33b9928b" class="com.integradordedados.examples.Employee" instance="#[vars.employee]"/>
+		<java:validate-type doc:name="Person" doc:id="7db531f9-9c04-48c7-bc12-39b05af879d7" class="com.integradordedados.examples.Person" instance="#[vars.employee]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="4d2eb7c0-1e4b-45c6-af2a-893524d8ac55" />
+		<choice doc:name="Choice" doc:id="80cd0fba-45c4-481b-a590-013c045e8d81" >
+			<when expression="#[Java::isInstanceOf(vars.employee, 'com.integradordedados.examples.Employee')]">
+				<logger level="INFO" doc:name="Logger" doc:id="68b2681c-0f53-45d1-9fc7-2b842c663e75" />
+			</when>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="b5f03de9-3484-4565-bbd9-ac8fe21840d2" />
+	</flow>
+</mule>

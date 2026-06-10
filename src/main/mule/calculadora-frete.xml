@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:java="http://www.mulesoft.org/schema/mule/java"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="3a38fc7f-c780-4187-9de0-baf3a4a67f79" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="calculadora-freteFlow" doc:id="ebba56de-6fac-4e3f-b54c-c54f64e98661" >
+		<http:listener doc:name="/calc-frete" doc:id="ffdf64be-b62d-4ade-b1af-a1924cf376b0" config-ref="HTTP_Listener_config" path="/calc-frete"/>
+		<java:new constructor="CalculadoraFrete(java.lang.String,java.lang.String,double)" doc:name="CalculadoraFrete" doc:id="ab81509c-9d8e-43fb-9683-75d9afe5ac3e" class="com.integradordedados.examples.CalculadoraFrete" target="calc">
+			<java:args ><![CDATA[#[{
+	taxaPorKm: payload.taxaPorKm,
+	origem: payload.origem,
+	destino: payload.destino
+}]]]></java:args>
+		</java:new>
+		<logger level="INFO" doc:name="Logger" doc:id="21ec5ae3-0b09-412e-9a76-b5daca1faafb" />
+		<foreach doc:name="For Each" doc:id="e4a3fe57-3314-472f-aeca-0868401f43f7" collection="#[payload.itens]">
+			<java:invoke doc:name="adicionarItem" doc:id="c9b6fa5b-abfb-4ba6-a279-64c6e235869f" instance="#[vars.calc]" class="com.integradordedados.examples.CalculadoraFrete" method="adicionarItem(java.lang.String)">
+				<java:args ><![CDATA[#[{
+	item: payload
+}]]]></java:args>
+			</java:invoke>
+			<logger level="INFO" doc:name="Logger" doc:id="d2ee03b9-51f1-4f12-afd3-9a79025ea78d" />
+		</foreach>
+		<java:invoke doc:name="calcularFrete" doc:id="f5c850a3-2eed-4c89-84f5-81b8ba7ff549" instance="#[vars.calc]" class="com.integradordedados.examples.CalculadoraFrete" method="calcularFrete(double)" target="valorFrete">
+			<java:args ><![CDATA[#[{
+	distanciaKm: payload.distanciaKm
+}]]]></java:args>
+		</java:invoke>
+		<logger level="INFO" doc:name="Logger" doc:id="e6f08d71-bbd2-4a38-96aa-729c467af3c8" />
+		<java:invoke-static doc:name="aplicarDesconto" doc:id="9ac9ef6e-1f36-4a34-b1da-8d59baef6c6a" class="com.integradordedados.examples.CalculadoraFrete" method="aplicarDesconto(double,double)" target="valorFinal">
+			<java:args ><![CDATA[#[{
+	valor: vars.valorFrete,
+	percentual: payload.percentualDesconto
+}]]]></java:args>
+		</java:invoke-static>
+		<logger level="INFO" doc:name="Logger" doc:id="04cc33bc-cec4-45ea-9c43-f5d5a515fd46" />
+		<ee:transform doc:name="Response" doc:id="be36a45e-a542-4e2e-8e69-97ee7dd4d86b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    rota: vars.calc.origem ++ " -> " ++ vars.calc.destino,
+    itens: vars.calc.quantidadeItens,
+    freteBase: vars.valorFrete,
+    freteComDesconto: vars.valorFinal
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="e322fb24-079b-4307-affc-84be02bf068b" />
+	</flow>
+</mule>
